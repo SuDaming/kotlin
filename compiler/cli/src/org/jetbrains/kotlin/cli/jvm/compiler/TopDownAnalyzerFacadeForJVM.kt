@@ -68,6 +68,7 @@ import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.jvm.JavaDescriptorResolver
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.resolve.jvm.extensions.PackageFragmentProviderExtension
+import org.jetbrains.kotlin.resolve.jvm.multiplatform.OptionalAnnotationPackageFragmentProvider
 import org.jetbrains.kotlin.resolve.lazy.KotlinCodeAnalyzer
 import org.jetbrains.kotlin.resolve.lazy.declarations.DeclarationProviderFactory
 import org.jetbrains.kotlin.resolve.lazy.declarations.FileBasedDeclarationProviderFactory
@@ -195,7 +196,8 @@ object TopDownAnalyzerFacadeForJVM {
                 CompositePackageFragmentProvider(
                     listOf(
                         moduleClassResolver.compiledCodeResolver.packageFragmentProvider,
-                        dependenciesContainer.get<JvmBuiltInsPackageFragmentProvider>()
+                        dependenciesContainer.get<JvmBuiltInsPackageFragmentProvider>(),
+                        dependenciesContainer.get<OptionalAnnotationPackageFragmentProvider>()
                     )
                 )
             )

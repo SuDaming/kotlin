@@ -13,13 +13,22 @@ import org.jetbrains.kotlin.js.resolve.getAnnotationsOnContainingJsModule
 import org.jetbrains.kotlin.load.kotlin.getJvmModuleNameForDeserializedDescriptor
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.resolve.ModuleAnnotationsResolver
+import org.jetbrains.kotlin.serialization.deserialization.ClassData
 
-class IdeModuleAnnotationsResolver(private val project: Project) : ModuleAnnotationsResolver {
+class IdeModuleAnnotationsResolver(project: Project) : ModuleAnnotationsResolver {
+    // TODO: allScope is incorrect here, need to look only in the root where the element comes from
+    private val packagePartProvider = IDEPackagePartProvider(GlobalSearchScope.allScope(project))
+
     override fun getAnnotationsOnContainingModule(descriptor: DeclarationDescriptor): List<ClassId> {
         getAnnotationsOnContainingJsModule(descriptor)?.let { return it }
 
         val moduleName = getJvmModuleNameForDeserializedDescriptor(descriptor) ?: return emptyList()
-        // TODO: allScope is incorrect here, need to look only in the root where this element comes from
-        return IDEPackagePartProvider(GlobalSearchScope.allScope(project)).getAnnotationsOnBinaryModule(moduleName)
+        return packagePartProvider.getAnnotationsOnBinaryModule(moduleName)
     }
+
+    // Optional annotations are not needed in IDE because they can only be used in common module sources, and they are loaded via the
+    // standard common module resolution there. (In the CLI compiler the situation is different because we compile common+platform
+    // sources together, _without_ common dependencies.)
+    override fun getAllOptionalAnnotationClasses(): List<ClassData> =
+        emptyList()
 }

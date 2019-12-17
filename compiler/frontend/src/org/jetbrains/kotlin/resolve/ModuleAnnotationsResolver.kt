@@ -9,9 +9,12 @@ import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.serialization.deserialization.ClassData
 
 interface ModuleAnnotationsResolver {
     fun getAnnotationsOnContainingModule(descriptor: DeclarationDescriptor): List<ClassId>
+
+    fun getAllOptionalAnnotationClasses(): List<ClassData>
 
     companion object {
         fun getInstance(project: Project): ModuleAnnotationsResolver =

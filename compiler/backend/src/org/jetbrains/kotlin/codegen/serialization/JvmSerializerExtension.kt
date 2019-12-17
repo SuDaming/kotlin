@@ -32,6 +32,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.isEffectivelyPrivateApi
 import org.jetbrains.kotlin.resolve.descriptorUtil.nonSourceAnnotations
 import org.jetbrains.kotlin.resolve.jvm.annotations.hasJvmDefaultAnnotation
+import org.jetbrains.kotlin.serialization.DescriptorAwareStringTable
 import org.jetbrains.kotlin.serialization.DescriptorSerializer
 import org.jetbrains.kotlin.serialization.DescriptorSerializer.Companion.writeVersionRequirement
 import org.jetbrains.kotlin.serialization.SerializerExtension
@@ -43,11 +44,12 @@ import org.jetbrains.org.objectweb.asm.commons.Method
 class JvmSerializerExtension @JvmOverloads constructor(
     private val bindings: JvmSerializationBindings,
     state: GenerationState,
-    private val typeMapper: KotlinTypeMapperBase = state.typeMapper
+    private val typeMapper: KotlinTypeMapperBase = state.typeMapper,
+    stringTable: DescriptorAwareStringTable? = null,
 ) : SerializerExtension() {
     private val globalBindings = state.globalSerializationBindings
     private val codegenBinding = state.bindingContext
-    override val stringTable = JvmCodegenStringTable(typeMapper)
+    override val stringTable: DescriptorAwareStringTable = stringTable ?: JvmCodegenStringTable(typeMapper)
     private val useTypeTable = state.useTypeTableInSerializer
     private val moduleName = state.moduleName
     private val classBuilderMode = state.classBuilderMode

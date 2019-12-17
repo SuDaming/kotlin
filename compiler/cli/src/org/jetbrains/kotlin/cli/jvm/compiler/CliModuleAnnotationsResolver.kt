@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.load.kotlin.PackagePartProvider
 import org.jetbrains.kotlin.load.kotlin.getJvmModuleNameForDeserializedDescriptor
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.resolve.ModuleAnnotationsResolver
+import org.jetbrains.kotlin.serialization.deserialization.ClassData
 
 class CliModuleAnnotationsResolver : ModuleAnnotationsResolver {
     private val packagePartProviders = mutableListOf<PackagePartProvider>()
@@ -25,4 +26,7 @@ class CliModuleAnnotationsResolver : ModuleAnnotationsResolver {
         val moduleName = getJvmModuleNameForDeserializedDescriptor(descriptor) ?: return emptyList()
         return packagePartProviders.flatMap { it.getAnnotationsOnBinaryModule(moduleName) }
     }
+
+    override fun getAllOptionalAnnotationClasses(): List<ClassData> =
+        packagePartProviders.flatMap { it.getAllOptionalAnnotationClasses() }
 }

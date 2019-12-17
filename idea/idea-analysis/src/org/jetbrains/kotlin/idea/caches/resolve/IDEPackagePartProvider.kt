@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.idea.vfilefinder.KotlinModuleMappingIndex
 import org.jetbrains.kotlin.load.kotlin.PackagePartProvider
 import org.jetbrains.kotlin.metadata.jvm.deserialization.PackageParts
 import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.serialization.deserialization.ClassData
 import org.jetbrains.kotlin.serialization.deserialization.MetadataPartProvider
 
 class IDEPackagePartProvider(val scope: GlobalSearchScope) : PackagePartProvider, MetadataPartProvider {
@@ -38,4 +39,7 @@ class IDEPackagePartProvider(val scope: GlobalSearchScope) : PackagePartProvider
     // Note that in case of several modules with the same name, we return all annotations on all of them, which is probably incorrect
     override fun getAnnotationsOnBinaryModule(moduleName: String): List<ClassId> =
         FileBasedIndex.getInstance().getValues(KotlinJvmModuleAnnotationsIndex.KEY, moduleName, scope).flatten()
+
+    override fun getAllOptionalAnnotationClasses(): List<ClassData> =
+        emptyList()
 }
