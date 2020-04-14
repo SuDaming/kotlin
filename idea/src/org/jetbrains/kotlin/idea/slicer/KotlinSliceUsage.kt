@@ -40,7 +40,7 @@ open class KotlinSliceUsage : SliceUsage {
     }
 
     override fun copy(): KotlinSliceUsage {
-        val element = usageInfo.element!!
+        val element = usageInfo.element ?: error("No more valid usageInfo.element")
         if (parent == null) return KotlinSliceUsage(element, params)
         return KotlinSliceUsage(element, parent, lambdaLevel, forcedExpressionMode)
     }
