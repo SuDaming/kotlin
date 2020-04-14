@@ -10,7 +10,7 @@ import org.jetbrains.kotlin.idea.debugger.evaluate.DefaultExecutionContext
 
 class DebugProbesImpl(context: DefaultExecutionContext) :
     BaseMirror<MirrorOfDebugProbesImpl>("kotlinx.coroutines.debug.internal.DebugProbesImpl", context) {
-    val javaLangListMirror = JavaUtilList(context)
+    val javaLangListMirror = JavaUtilAbstractCollection(context)
     val stackTraceElement = StackTraceElement(context)
     val coroutineInfo = CoroutineInfo(this, context)
     val instance = staticObjectValue("INSTANCE")
@@ -54,7 +54,7 @@ data class MirrorOfDebugProbesImpl(val that: ObjectReference, val instance: Obje
 class CoroutineInfo(val debugProbesImplMirror: DebugProbesImpl, context: DefaultExecutionContext) :
     BaseMirror<MirrorOfCoroutineInfo>("kotlinx.coroutines.debug.CoroutineInfo", context) {
     val javaLangMirror = JavaLangMirror(context)
-    val javaLangListMirror = JavaUtilList(context)
+    val javaLangListMirror = JavaUtilAbstractCollection(context)
     private val coroutineContextMirror = CoroutineContext(context)
     private val coroutineStackFrameMirror = CoroutineStackFrame(context)
     private val stackTraceElement = StackTraceElement(context)
