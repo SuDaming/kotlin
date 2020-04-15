@@ -11,8 +11,6 @@ import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.metadata.ProtoBuf
 import org.jetbrains.kotlin.metadata.deserialization.*
 import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedAnnotations
@@ -30,9 +28,10 @@ class TypeDeserializer(
     private val containerPresentableName: String,
     var experimentalSuspendFunctionTypeEncountered: Boolean = false
 ) {
-    private val classDescriptors: (Int) -> ClassDescriptor? = c.storageManager.createMemoizedFunctionWithNullableValues { fqNameIndex ->
-        computeClassDescriptor(fqNameIndex)
-    }
+    private val classifierDescriptors: (Int) -> ClassifierDescriptor? =
+        c.storageManager.createMemoizedFunctionWithNullableValues { fqNameIndex ->
+            computeClassifierDescriptor(fqNameIndex)
+        }
 
     private val typeAliasDescriptors: (Int) -> ClassifierDescriptor? =
         c.storageManager.createMemoizedFunctionWithNullableValues { fqNameIndex ->
@@ -57,15 +56,19 @@ class TypeDeserializer(
     fun type(proto: ProtoBuf.Type): KotlinType {
         if (proto.hasFlexibleTypeCapabilitiesId()) {
             val id = c.nameResolver.getString(proto.flexibleTypeCapabilitiesId)
-            val lowerBound = simpleType(proto)
-            val upperBound = simpleType(proto.flexibleUpperBound(c.typeTable)!!)
+            val lowerBound = simpleTypeExpandingAliases(proto)
+            val upperBound = simpleTypeExpandingAliases(proto.flexibleUpperBound(c.typeTable)!!)
             return c.components.flexibleTypeDeserializer.create(proto, id, lowerBound, upperBound)
         }
 
-        return simpleType(proto)
+        return simpleTypeExpandingAliases(proto)
     }
 
-    fun simpleType(proto: ProtoBuf.Type): SimpleType {
+    fun simpleType(proto: ProtoBuf.Type) = simpleType(proto, expandTypeAliases = false)
+
+    private fun simpleTypeExpandingAliases(proto: ProtoBuf.Type) = simpleType(proto, expandTypeAliases = true)
+
+    private fun simpleType(proto: ProtoBuf.Type, expandTypeAliases: Boolean): SimpleType {
         val localClassifierType = when {
             proto.hasClassName() -> computeLocalClassifierReplacementType(proto.className)
             proto.hasTypeAliasName() -> computeLocalClassifierReplacementType(proto.typeAliasName)
@@ -96,10 +99,17 @@ class TypeDeserializer(
             KotlinTypeFactory.simpleType(annotations, constructor, arguments, proto.nullable)
         }
 
-        val computedType = proto.abbreviatedType(c.typeTable)?.let {
-            simpleType.withAbbreviation(simpleType(it))
-        } ?: simpleType
+        val computedType = run {
+            val declarationDescriptor = simpleType.constructor.declarationDescriptor
 
+            if (expandTypeAliases && declarationDescriptor is TypeAliasDescriptor) {
+                with(KotlinTypeFactory) { declarationDescriptor.computeExpandedType(arguments) }
+            } else {
+                proto.abbreviatedType(c.typeTable)?.let {
+                    simpleType.withAbbreviation(simpleType(it, expandTypeAliases = false))
+                } ?: simpleType
+            }
+        }
 
         if (proto.hasClassName()) {
             val classId = c.nameResolver.getClassId(proto.className)
@@ -121,7 +131,7 @@ class TypeDeserializer(
         }
 
         return when {
-            proto.hasClassName() -> (classDescriptors(proto.className) ?: notFoundClass(proto.className)).typeConstructor
+            proto.hasClassName() -> (classifierDescriptors(proto.className) ?: notFoundClass(proto.className)).typeConstructor
             proto.hasTypeParameter() ->
                 typeParameterTypeConstructor(proto.typeParameter)
                     ?: ErrorUtils.createErrorTypeConstructor(
@@ -223,13 +233,13 @@ class TypeDeserializer(
     private fun typeParameterTypeConstructor(typeParameterId: Int): TypeConstructor? =
         typeParameterDescriptors[typeParameterId]?.typeConstructor ?: parent?.typeParameterTypeConstructor(typeParameterId)
 
-    private fun computeClassDescriptor(fqNameIndex: Int): ClassDescriptor? {
+    private fun computeClassifierDescriptor(fqNameIndex: Int): ClassifierDescriptor? {
         val id = c.nameResolver.getClassId(fqNameIndex)
         if (id.isLocal) {
             // Local classes can't be found in scopes
             return c.components.deserializeClass(id)
         }
-        return c.components.moduleDescriptor.findClassAcrossModuleDependencies(id)
+        return c.components.moduleDescriptor.findClassifierAcrossModuleDependencies(id)
     }
 
     private fun computeLocalClassifierReplacementType(className: Int): SimpleType? {
