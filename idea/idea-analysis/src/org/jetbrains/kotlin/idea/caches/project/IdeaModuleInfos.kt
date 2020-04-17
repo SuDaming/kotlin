@@ -213,7 +213,7 @@ data class ModuleProductionSourceInfo internal constructor(
 
     override val name = Name.special("<production sources for module ${module.name}>")
 
-    override val stableName: Name = module.getStableName()
+    override val stableName: Name by lazy { module.getStableName() }
 
     override fun contentScope(): GlobalSearchScope {
         return enlargedSearchScope(ModuleProductionSourceScope(module), module, isTestScope = false)
